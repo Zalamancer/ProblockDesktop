@@ -8,6 +8,7 @@ import {
 import { bridge } from "../lib/tauri-bridge";
 import { useOrchestrator } from "../store/orchestrator-store";
 import { useActivity } from "../store/activity-store";
+import { useToasts } from "../store/toast-store";
 
 export function ScriptRunner() {
   const project = useOrchestrator((s) => s.project);
@@ -15,6 +16,7 @@ export function ScriptRunner() {
   const setBlenderStatus = useOrchestrator((s) => s.setBlenderStatus);
   const setBlenderActiveTask = useOrchestrator((s) => s.setBlenderActiveTask);
   const log = useActivity((s) => s.add);
+  const toast = useToasts((s) => s.push);
 
   const [selectedId, setSelectedId] = useState(SCRIPT_TEMPLATES[0].id);
   const [paramValues, setParamValues] = useState<Record<string, Record<string, string | number | boolean>>>({});
@@ -54,12 +56,14 @@ export function ScriptRunner() {
       if (result.success) {
         setBlenderStatus("idle");
         log("blender", "success", `${template.name} completed`);
+        toast("success", `${template.name} completed`);
         if (result.output_files.length > 0) {
           log("blender", "info", `Output: ${result.output_files.join(", ")}`);
         }
       } else {
         setBlenderStatus("error");
         log("blender", "error", `${template.name} failed`);
+        toast("error", `${template.name} failed`);
         if (result.stderr) {
           log("blender", "error", result.stderr.slice(0, 200));
         }
@@ -67,6 +71,7 @@ export function ScriptRunner() {
     } catch (e: any) {
       setBlenderStatus("error");
       log("blender", "error", `Script error: ${e}`);
+      toast("error", `Script error: ${e}`);
     } finally {
       setBlenderActiveTask(null);
     }

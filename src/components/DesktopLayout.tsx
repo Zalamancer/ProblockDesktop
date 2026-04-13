@@ -10,7 +10,10 @@ import { GamePreview } from "./GamePreview";
 import { AssetBrowser } from "./AssetBrowser";
 import { ScriptRunner } from "./ScriptRunner";
 import { SettingsModal } from "./SettingsModal";
+import { ToastContainer } from "./ToastContainer";
 import { useSettings } from "../store/settings-store";
+import { useToasts } from "../store/toast-store";
+import { useHotkeys } from "../lib/use-hotkeys";
 import { Wrench, Monitor, FolderOpen, Code2, Settings } from "lucide-react";
 
 export function DesktopLayout() {
@@ -23,6 +26,17 @@ export function DesktopLayout() {
   const removeAsset = useOrchestrator((s) => s.removeAsset);
   const log = useActivity((s) => s.add);
   const pushTerminal = useTerminal((s) => s.push);
+  const toast = useToasts((s) => s.push);
+  const clearTerminal = useTerminal((s) => s.clear);
+
+  // Keyboard shortcuts
+  useHotkeys({
+    "mod+1": () => setCenterTab("preview"),
+    "mod+2": () => setCenterTab("assets"),
+    "mod+3": () => setCenterTab("scripts"),
+    "mod+,": () => useSettings.getState().openSettings(),
+    "mod+k": () => clearTerminal(),
+  });
 
   // Detect tools on mount
   useEffect(() => {
@@ -43,6 +57,7 @@ export function DesktopLayout() {
       })
       .catch(() => {
         log("system", "error", "Tool detection failed");
+        toast("error", "Tool detection failed");
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -179,6 +194,8 @@ export function DesktopLayout() {
           <ActivityLog />
         </div>
       </div>
+
+      <ToastContainer />
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { useOrchestrator } from "../store/orchestrator-store";
 import { bridge, dialogs } from "../lib/tauri-bridge";
 import { useActivity } from "../store/activity-store";
 import { useSettings } from "../store/settings-store";
+import { useToasts } from "../store/toast-store";
 
 function StatusDot({ status }: { status: "idle" | "running" | "error" }) {
   const color =
@@ -38,6 +39,7 @@ export function PipelinePanel() {
   const log = useActivity((s) => s.add);
   const addRecent = useSettings((s) => s.addRecentProject);
   const recentProjects = useSettings((s) => s.recentProjects);
+  const toast = useToasts((s) => s.push);
 
   async function handleCreateProject() {
     try {
@@ -51,10 +53,12 @@ export function PipelinePanel() {
         godotProjectPath: info.godot_project_path,
       });
       log("system", "success", `Created project: ${info.name}`);
+      toast("success", `Created project: ${info.name}`);
       addRecent(info.name, info.path);
       await refreshAssets();
     } catch (e: any) {
       log("system", "error", `Create failed: ${e}`);
+      toast("error", `Create failed: ${e}`);
     }
   }
 
@@ -66,6 +70,7 @@ export function PipelinePanel() {
       godotProjectPath: info.godot_project_path,
     });
     log("system", "success", `Opened project: ${info.name}`);
+    toast("success", `Opened: ${info.name}`);
     addRecent(info.name, info.path);
     await refreshAssets();
     await refreshGodotCounts();
@@ -78,6 +83,7 @@ export function PipelinePanel() {
       await openProjectByPath(folder);
     } catch (e: any) {
       log("system", "error", `Open failed: ${e}`);
+      toast("error", `Open failed: ${e}`);
     }
   }
 
@@ -86,6 +92,7 @@ export function PipelinePanel() {
       await openProjectByPath(path);
     } catch (e: any) {
       log("system", "error", `Open failed: ${e}`);
+      toast("error", `Open failed: ${e}`);
     }
   }
 
@@ -125,6 +132,7 @@ export function PipelinePanel() {
     } catch (e: any) {
       setBlenderStatus("error");
       log("blender", "error", `Blender failed: ${e}`);
+      toast("error", `Blender failed: ${e}`);
     }
   }
 
@@ -137,6 +145,7 @@ export function PipelinePanel() {
     } catch (e: any) {
       setGodotStatus("error");
       log("godot", "error", `Godot failed: ${e}`);
+      toast("error", `Godot failed: ${e}`);
     }
   }
 
@@ -149,6 +158,7 @@ export function PipelinePanel() {
     } catch (e: any) {
       setGodotStatus("error");
       log("godot", "error", `Run failed: ${e}`);
+      toast("error", `Run failed: ${e}`);
     }
   }
 
@@ -161,12 +171,15 @@ export function PipelinePanel() {
       setGodotStatus("idle");
       if (result.success) {
         log("godot", "success", `Exported to ${result.output_path}`);
+        toast("success", "HTML5 export complete");
       } else {
         log("godot", "error", "Export failed");
+        toast("error", "HTML5 export failed");
       }
     } catch (e: any) {
       setGodotStatus("error");
       log("godot", "error", `Export failed: ${e}`);
+      toast("error", `Export failed: ${e}`);
     }
   }
 
