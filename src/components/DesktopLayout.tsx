@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { bridge, events } from "../lib/tauri-bridge";
 import { useOrchestrator } from "../store/orchestrator-store";
 import { useActivity } from "../store/activity-store";
@@ -11,16 +11,20 @@ import { AssetBrowser } from "./AssetBrowser";
 import { ScriptRunner } from "./ScriptRunner";
 import { SettingsModal } from "./SettingsModal";
 import { ToastContainer } from "./ToastContainer";
+import { StatusBar } from "./StatusBar";
 import { useSettings } from "../store/settings-store";
 import { useToasts } from "../store/toast-store";
 import { useHotkeys } from "../lib/use-hotkeys";
-import { Wrench, Monitor, FolderOpen, Code2, Settings } from "lucide-react";
+import { Wrench, Monitor, FolderOpen, Code2, Settings, GripHorizontal } from "lucide-react";
 
 export function DesktopLayout() {
-  const [terminalHeight] = useState(200);
+  const [terminalHeight, setTerminalHeight] = useState(200);
   const [toolsDetected, setToolsDetected] = useState(false);
   const [centerTab, setCenterTab] = useState<"preview" | "assets" | "scripts">("preview");
+  const [isResizing, setIsResizing] = useState(false);
+  const resizeRef = useRef<number | null>(null);
 
+  const project = useOrchestrator((s) => s.project);
   const setGodotStatus = useOrchestrator((s) => s.setGodotStatus);
   const addAsset = useOrchestrator((s) => s.addAsset);
   const removeAsset = useOrchestrator((s) => s.removeAsset);
@@ -28,6 +32,36 @@ export function DesktopLayout() {
   const pushTerminal = useTerminal((s) => s.push);
   const toast = useToasts((s) => s.push);
   const clearTerminal = useTerminal((s) => s.clear);
+
+  // Terminal resize handlers
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+    resizeRef.current = e.clientY;
+  }, []);
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    function handleMouseMove(e: MouseEvent) {
+      if (resizeRef.current === null) return;
+      const delta = resizeRef.current - e.clientY;
+      resizeRef.current = e.clientY;
+      setTerminalHeight((h) => Math.min(500, Math.max(80, h + delta)));
+    }
+
+    function handleMouseUp() {
+      setIsResizing(false);
+      resizeRef.current = null;
+    }
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizing]);
 
   // Keyboard shortcuts
   useHotkeys({
@@ -104,19 +138,31 @@ export function DesktopLayout() {
   }, []);
 
   return (
-    <div className="h-screen flex flex-col bg-zinc-950 text-zinc-100 p-1.5 gap-1.5">
+    <div className={`h-screen flex flex-col bg-zinc-950 text-zinc-100 ${isResizing ? "select-none" : ""}`}>
       {/* Top bar */}
-      <div className="h-10 flex items-center justify-between px-3 bg-zinc-900 rounded-lg border border-zinc-800">
-        <span className="text-sm font-semibold tracking-wide">Problocks</span>
+      <div className="h-10 flex items-center justify-between px-3 bg-zinc-900 border-b border-zinc-800 shrink-0">
+        <span
+          className="text-sm font-semibold tracking-wide cursor-pointer hover:text-zinc-300 transition-colors"
+          onClick={() => setCenterTab("preview")}
+        >
+          Problocks
+        </span>
+
+        {project && (
+          <span className="text-xs text-zinc-500 absolute left-1/2 -translate-x-1/2">
+            {project.name}
+          </span>
+        )}
+
         <div className="flex items-center gap-3 text-xs text-zinc-500">
           <div className="flex items-center gap-1.5">
             <Wrench size={12} />
-            <span>{toolsDetected ? "Tools detected" : "Detecting tools..."}</span>
+            <span>{toolsDetected ? "Tools detected" : "Detecting..."}</span>
           </div>
           <button
             onClick={useSettings.getState().openSettings}
             className="p-1 text-zinc-500 hover:text-zinc-200 transition-colors"
-            title="Settings"
+            title="Settings (⌘,)"
           >
             <Settings size={14} />
           </button>
@@ -126,47 +172,37 @@ export function DesktopLayout() {
       <SettingsModal />
 
       {/* Main content */}
-      <div className="flex-1 flex gap-1.5 min-h-0">
+      <div className="flex-1 flex gap-px min-h-0">
         {/* Left: Pipeline */}
-        <div className="w-56 bg-zinc-900 rounded-lg border border-zinc-800 p-3 overflow-y-auto">
+        <div className="w-56 bg-zinc-900 border-r border-zinc-800 p-3 overflow-y-auto">
           <PipelinePanel />
         </div>
 
-        {/* Center: Preview/Assets + Terminal */}
-        <div className="flex-1 flex flex-col gap-1.5 min-w-0">
-          <div className="flex-1 bg-zinc-900 rounded-lg border border-zinc-800 flex flex-col min-h-0 overflow-hidden">
+        {/* Center: Preview/Assets/Scripts + Terminal */}
+        <div className="flex-1 flex flex-col min-w-0">
+          <div className="flex-1 bg-zinc-900 flex flex-col min-h-0 overflow-hidden">
             {/* Tab bar */}
             <div className="flex items-center gap-0.5 px-2 pt-1.5 pb-0.5 border-b border-zinc-800">
-              <button
-                onClick={() => setCenterTab("preview")}
-                className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md transition-colors ${
-                  centerTab === "preview"
-                    ? "bg-zinc-700 text-zinc-100"
-                    : "text-zinc-500 hover:text-zinc-300"
-                }`}
-              >
-                <Monitor size={12} /> Preview
-              </button>
-              <button
-                onClick={() => setCenterTab("assets")}
-                className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md transition-colors ${
-                  centerTab === "assets"
-                    ? "bg-zinc-700 text-zinc-100"
-                    : "text-zinc-500 hover:text-zinc-300"
-                }`}
-              >
-                <FolderOpen size={12} /> Assets
-              </button>
-              <button
-                onClick={() => setCenterTab("scripts")}
-                className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md transition-colors ${
-                  centerTab === "scripts"
-                    ? "bg-zinc-700 text-zinc-100"
-                    : "text-zinc-500 hover:text-zinc-300"
-                }`}
-              >
-                <Code2 size={12} /> Scripts
-              </button>
+              {([
+                { key: "preview" as const, icon: Monitor, label: "Preview", hint: "⌘1" },
+                { key: "assets" as const, icon: FolderOpen, label: "Assets", hint: "⌘2" },
+                { key: "scripts" as const, icon: Code2, label: "Scripts", hint: "⌘3" },
+              ]).map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setCenterTab(tab.key)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md transition-colors ${
+                    centerTab === tab.key
+                      ? "bg-zinc-700 text-zinc-100"
+                      : "text-zinc-500 hover:text-zinc-300"
+                  }`}
+                  title={tab.hint}
+                >
+                  <tab.icon size={12} />
+                  {tab.label}
+                  <span className="text-[9px] text-zinc-600 ml-0.5 hidden lg:inline">{tab.hint}</span>
+                </button>
+              ))}
             </div>
             {/* Tab content */}
             <div className="flex-1 min-h-0 p-2">
@@ -180,9 +216,17 @@ export function DesktopLayout() {
             </div>
           </div>
 
+          {/* Resize handle */}
+          <div
+            onMouseDown={handleResizeStart}
+            className="h-1.5 bg-zinc-950 cursor-row-resize flex items-center justify-center hover:bg-zinc-700 transition-colors group"
+          >
+            <GripHorizontal size={12} className="text-zinc-700 group-hover:text-zinc-400" />
+          </div>
+
           {/* Bottom: Terminal */}
           <div
-            className="bg-zinc-900 rounded-lg border border-zinc-800 p-3 overflow-y-auto"
+            className="bg-zinc-900 border-t border-zinc-800 p-3 overflow-y-auto shrink-0"
             style={{ height: terminalHeight }}
           >
             <Terminal />
@@ -190,10 +234,13 @@ export function DesktopLayout() {
         </div>
 
         {/* Right: Activity Log */}
-        <div className="w-64 bg-zinc-900 rounded-lg border border-zinc-800 p-3 overflow-y-auto">
+        <div className="w-64 bg-zinc-900 border-l border-zinc-800 p-3 overflow-y-auto">
           <ActivityLog />
         </div>
       </div>
+
+      {/* Status bar */}
+      <StatusBar />
 
       <ToastContainer />
     </div>
