@@ -161,6 +161,13 @@ pub async fn export_godot_html5(
 }
 
 #[tauri::command]
+pub fn list_godot_files(state: State<'_, AppState>) -> Result<Vec<godot::GodotFileEntry>, String> {
+    let pp = state.project_path.lock().unwrap().clone()
+        .ok_or("No project open")?;
+    Ok(godot::list_project_files(&pp))
+}
+
+#[tauri::command]
 pub fn get_godot_counts(state: State<'_, AppState>) -> Result<(usize, usize), String> {
     let pp = state.project_path.lock().unwrap().clone()
         .ok_or("No project open")?;

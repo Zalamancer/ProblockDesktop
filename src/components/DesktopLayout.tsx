@@ -12,15 +12,19 @@ import { ScriptRunner } from "./ScriptRunner";
 import { SettingsModal } from "./SettingsModal";
 import { ToastContainer } from "./ToastContainer";
 import { StatusBar } from "./StatusBar";
+import { SceneBrowser } from "./SceneBrowser";
+import { CommandPalette, buildPaletteActions } from "./CommandPalette";
 import { useSettings } from "../store/settings-store";
 import { useToasts } from "../store/toast-store";
 import { useHotkeys } from "../lib/use-hotkeys";
-import { Wrench, Monitor, FolderOpen, Code2, Settings, GripHorizontal } from "lucide-react";
+import { dialogs } from "../lib/tauri-bridge";
+import { Wrench, Monitor, FolderOpen, Code2, Settings, GripHorizontal, Clapperboard } from "lucide-react";
 
 export function DesktopLayout() {
   const [terminalHeight, setTerminalHeight] = useState(200);
   const [toolsDetected, setToolsDetected] = useState(false);
-  const [centerTab, setCenterTab] = useState<"preview" | "assets" | "scripts">("preview");
+  const [centerTab, setCenterTab] = useState<"preview" | "assets" | "scripts" | "scenes">("preview");
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const resizeRef = useRef<number | null>(null);
 
@@ -68,8 +72,10 @@ export function DesktopLayout() {
     "mod+1": () => setCenterTab("preview"),
     "mod+2": () => setCenterTab("assets"),
     "mod+3": () => setCenterTab("scripts"),
+    "mod+4": () => setCenterTab("scenes"),
     "mod+,": () => useSettings.getState().openSettings(),
     "mod+k": () => clearTerminal(),
+    "mod+p": () => setPaletteOpen(true),
   });
 
   // Detect tools on mount
@@ -187,6 +193,7 @@ export function DesktopLayout() {
                 { key: "preview" as const, icon: Monitor, label: "Preview", hint: "⌘1" },
                 { key: "assets" as const, icon: FolderOpen, label: "Assets", hint: "⌘2" },
                 { key: "scripts" as const, icon: Code2, label: "Scripts", hint: "⌘3" },
+                { key: "scenes" as const, icon: Clapperboard, label: "Scenes", hint: "⌘4" },
               ]).map((tab) => (
                 <button
                   key={tab.key}
@@ -210,8 +217,10 @@ export function DesktopLayout() {
                 <GamePreview />
               ) : centerTab === "assets" ? (
                 <AssetBrowser />
-              ) : (
+              ) : centerTab === "scripts" ? (
                 <ScriptRunner />
+              ) : (
+                <SceneBrowser />
               )}
             </div>
           </div>
@@ -241,6 +250,79 @@ export function DesktopLayout() {
 
       {/* Status bar */}
       <StatusBar />
+
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        actions={buildPaletteActions({
+          newProject: async () => {
+            const dir = await dialogs.pickFolder("Choose location for new project");
+            if (dir) {
+              const name = dir.split("/").pop() ?? "Untitled";
+              try {
+                const info = await bridge.createProject(dir, name);
+                useOrchestrator.getState().setProject({
+                  name: info.name,
+                  path: info.path,
+                  godotProjectPath: info.godot_project_path,
+                });
+                toast("success", `Created: ${info.name}`);
+              } catch (e: any) {
+                toast("error", `Create failed: ${e}`);
+              }
+            }
+          },
+          openProject: async () => {
+            const dir = await dialogs.pickFolder("Open Problocks project");
+            if (dir) {
+              try {
+                const info = await bridge.openProject(dir);
+                useOrchestrator.getState().setProject({
+                  name: info.name,
+                  path: info.path,
+                  godotProjectPath: info.godot_project_path,
+                });
+                toast("success", `Opened: ${info.name}`);
+              } catch (e: any) {
+                toast("error", `Open failed: ${e}`);
+              }
+            }
+          },
+          switchTab: (tab) => setCenterTab(tab as typeof centerTab),
+          openSettings: () => useSettings.getState().openSettings(),
+          clearTerminal,
+          openBlender: async () => {
+            try {
+              const file = await dialogs.pickBlendFile();
+              await bridge.openInBlender(file ?? "");
+            } catch (e: any) {
+              toast("error", `Blender failed: ${e}`);
+            }
+          },
+          openGodot: async () => {
+            try {
+              await bridge.openGodotEditor();
+            } catch (e: any) {
+              toast("error", `Godot failed: ${e}`);
+            }
+          },
+          runGame: async () => {
+            try {
+              await bridge.runGodotGame();
+            } catch (e: any) {
+              toast("error", `Run failed: ${e}`);
+            }
+          },
+          exportHtml5: async () => {
+            try {
+              await bridge.exportGodotHtml5();
+              toast("success", "HTML5 export complete");
+            } catch (e: any) {
+              toast("error", `Export failed: ${e}`);
+            }
+          },
+        })}
+      />
 
       <ToastContainer />
     </div>

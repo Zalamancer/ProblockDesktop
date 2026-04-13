@@ -37,6 +37,12 @@ export interface GodotExportResult {
   stderr: string;
 }
 
+export interface GodotFileEntry {
+  name: string;
+  path: string;
+  file_type: "scene" | "script";
+}
+
 export interface FileChangeEvent {
   kind: "created" | "modified" | "removed";
   path: string;
@@ -68,6 +74,8 @@ export const bridge = {
   runGodotGame: () => invoke<void>("run_godot_game"),
 
   exportGodotHtml5: () => invoke<GodotExportResult>("export_godot_html5"),
+
+  listGodotFiles: () => invoke<GodotFileEntry[]>("list_godot_files"),
 
   getGodotCounts: () => invoke<[number, number]>("get_godot_counts"),
 

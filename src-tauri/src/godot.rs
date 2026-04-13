@@ -135,6 +135,52 @@ pub async fn export_html5(
     })
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GodotFileEntry {
+    pub name: String,
+    pub path: String,
+    pub file_type: String, // "scene" or "script"
+}
+
+/// List all scene and script files in a Godot project
+pub fn list_project_files(project_path: &str) -> Vec<GodotFileEntry> {
+    let root = Path::new(project_path);
+    let mut entries = Vec::new();
+
+    fn walk(dir: &Path, root: &Path, entries: &mut Vec<GodotFileEntry>) {
+        if let Ok(dir_entries) = std::fs::read_dir(dir) {
+            for entry in dir_entries.flatten() {
+                let p = entry.path();
+                if p.is_dir() {
+                    // Skip hidden directories and .godot cache
+                    if let Some(name) = p.file_name().and_then(|n| n.to_str()) {
+                        if name.starts_with('.') {
+                            continue;
+                        }
+                    }
+                    walk(&p, root, entries);
+                } else if let Some(ext) = p.extension().and_then(|e| e.to_str()) {
+                    let file_type = match ext {
+                        "tscn" | "scn" => "scene",
+                        "gd" | "cs" => "script",
+                        _ => continue,
+                    };
+                    let rel = p.strip_prefix(root).unwrap_or(&p);
+                    entries.push(GodotFileEntry {
+                        name: p.file_name().unwrap_or_default().to_string_lossy().to_string(),
+                        path: rel.to_string_lossy().to_string(),
+                        file_type: file_type.to_string(),
+                    });
+                }
+            }
+        }
+    }
+
+    walk(root, root, &mut entries);
+    entries.sort_by(|a, b| a.path.cmp(&b.path));
+    entries
+}
+
 /// Count scenes and scripts in a Godot project
 pub fn count_project_files(project_path: &str) -> (usize, usize) {
     let path = Path::new(project_path);
