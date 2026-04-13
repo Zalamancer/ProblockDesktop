@@ -1,19 +1,28 @@
-mod project;
 mod blender;
+mod commands;
 mod godot;
+mod project;
 mod watcher;
 
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
+use commands::AppState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet])
+        .manage(AppState::default())
+        .invoke_handler(tauri::generate_handler![
+            commands::detect_tools,
+            commands::create_project,
+            commands::open_project,
+            commands::list_assets,
+            commands::run_blender_script,
+            commands::open_in_blender,
+            commands::open_godot_editor,
+            commands::run_godot_game,
+            commands::export_godot_html5,
+            commands::get_godot_counts,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
