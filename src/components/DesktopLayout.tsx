@@ -8,12 +8,13 @@ import { ActivityLog } from "./ActivityLog";
 import { Terminal } from "./Terminal";
 import { GamePreview } from "./GamePreview";
 import { AssetBrowser } from "./AssetBrowser";
-import { Wrench, Monitor, FolderOpen } from "lucide-react";
+import { ScriptRunner } from "./ScriptRunner";
+import { Wrench, Monitor, FolderOpen, Code2 } from "lucide-react";
 
 export function DesktopLayout() {
   const [terminalHeight] = useState(200);
   const [toolsDetected, setToolsDetected] = useState(false);
-  const [centerTab, setCenterTab] = useState<"preview" | "assets">("preview");
+  const [centerTab, setCenterTab] = useState<"preview" | "assets" | "scripts">("preview");
 
   const setGodotStatus = useOrchestrator((s) => s.setGodotStatus);
   const addAsset = useOrchestrator((s) => s.addAsset);
@@ -128,10 +129,26 @@ export function DesktopLayout() {
               >
                 <FolderOpen size={12} /> Assets
               </button>
+              <button
+                onClick={() => setCenterTab("scripts")}
+                className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md transition-colors ${
+                  centerTab === "scripts"
+                    ? "bg-zinc-700 text-zinc-100"
+                    : "text-zinc-500 hover:text-zinc-300"
+                }`}
+              >
+                <Code2 size={12} /> Scripts
+              </button>
             </div>
             {/* Tab content */}
             <div className="flex-1 min-h-0 p-2">
-              {centerTab === "preview" ? <GamePreview /> : <AssetBrowser />}
+              {centerTab === "preview" ? (
+                <GamePreview />
+              ) : centerTab === "assets" ? (
+                <AssetBrowser />
+              ) : (
+                <ScriptRunner />
+              )}
             </div>
           </div>
 
