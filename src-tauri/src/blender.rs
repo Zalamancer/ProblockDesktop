@@ -54,6 +54,7 @@ pub async fn run_script(
     blender_path: &str,
     script_path: &str,
     blend_file: Option<&str>,
+    output_dir: Option<&str>,
 ) -> Result<BlenderResult, String> {
     let mut cmd = Command::new(blender_path);
     cmd.arg("--background");
@@ -63,6 +64,14 @@ pub async fn run_script(
     }
 
     cmd.arg("--python").arg(script_path);
+
+    // Pass output directory as custom arg after "--"
+    if let Some(dir) = output_dir {
+        std::fs::create_dir_all(dir)
+            .map_err(|e| format!("Failed to create output dir: {}", e))?;
+        cmd.arg("--").arg(dir);
+    }
+
     cmd.stdout(Stdio::piped()).stderr(Stdio::piped());
 
     let mut child = cmd.spawn().map_err(|e| format!("Failed to spawn Blender: {}", e))?;

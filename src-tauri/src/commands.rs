@@ -102,7 +102,8 @@ pub async fn run_blender_script(
     std::fs::write(&script_path, &script_content)
         .map_err(|e| format!("Failed to write script: {}", e))?;
 
-    blender::run_script(&app, &bp, &script_path, None).await
+    let output_dir = format!("{}/assets/models", pp);
+    blender::run_script(&app, &bp, &script_path, None, Some(&output_dir)).await
 }
 
 #[tauri::command]

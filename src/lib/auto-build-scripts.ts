@@ -202,7 +202,7 @@ print(f"[EXPORT] player -> {filepath}")
  * References the GLB assets and sets up player controller + camera.
  */
 export function generateMainScene(): string {
-  return `[gd_scene load_steps=7 format=3 uid="uid://main"]
+  return `[gd_scene load_steps=8 format=3]
 
 [ext_resource type="PackedScene" path="res://assets/models/terrain.glb" id="1"]
 [ext_resource type="PackedScene" path="res://assets/models/tree.glb" id="2"]
@@ -211,7 +211,16 @@ export function generateMainScene(): string {
 [ext_resource type="Script" path="res://scripts/player_controller.gd" id="5"]
 [ext_resource type="Script" path="res://scripts/camera_follow.gd" id="6"]
 
+[sub_resource type="Environment" id="Environment_001"]
+background_mode = 1
+background_color = Color(0.53, 0.76, 0.93, 1)
+ambient_light_color = Color(0.6, 0.65, 0.7, 1)
+ambient_light_energy = 0.5
+
 [node name="World" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_001")
 
 [node name="Terrain" parent="." instance=ExtResource("1")]
 
@@ -247,14 +256,6 @@ script = ExtResource("6")
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.7, -0.7, 0, 0.7, 0.7, 0, 10, 10)
 shadow_enabled = true
-
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
-
-[sub_resource type="Environment" id="env"]
-background_mode = 1
-background_color = Color(0.53, 0.76, 0.93, 1)
-ambient_light_color = Color(0.6, 0.65, 0.7, 1)
-ambient_light_energy = 0.5
 `;
 }
 
