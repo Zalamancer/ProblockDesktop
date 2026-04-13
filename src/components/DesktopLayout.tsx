@@ -6,7 +6,7 @@ import { useTerminal } from "../store/terminal-store";
 import { PipelinePanel } from "./PipelinePanel";
 import { ActivityLog } from "./ActivityLog";
 import { Terminal } from "./Terminal";
-import { GamePreview } from "./GamePreview";
+import { LivePreview } from "./LivePreview";
 import { AssetBrowser } from "./AssetBrowser";
 import { ScriptRunner } from "./ScriptRunner";
 import { SettingsModal } from "./SettingsModal";
@@ -217,7 +217,7 @@ export function DesktopLayout() {
             {/* Tab content */}
             <div className="flex-1 min-h-0 p-2">
               {centerTab === "preview" ? (
-                <GamePreview />
+                <LivePreview />
               ) : centerTab === "assets" ? (
                 <AssetBrowser />
               ) : centerTab === "scripts" ? (
@@ -225,7 +225,7 @@ export function DesktopLayout() {
               ) : centerTab === "scenes" ? (
                 <SceneBrowser />
               ) : (
-                <AutoBuilder />
+                <AutoBuilder onComplete={() => setCenterTab("preview")} />
               )}
             </div>
           </div>

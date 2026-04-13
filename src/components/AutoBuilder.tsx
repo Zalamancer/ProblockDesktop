@@ -45,7 +45,7 @@ const STEP_COLORS: Record<StepStatus, string> = {
   error: "text-red-400",
 };
 
-export function AutoBuilder() {
+export function AutoBuilder({ onComplete }: { onComplete?: () => void } = {}) {
   const project = useOrchestrator((s) => s.project);
   const log = useActivity((s) => s.add);
   const pushTerminal = useTerminal((s) => s.push);
@@ -119,8 +119,10 @@ export function AutoBuilder() {
       pushTerminal("system", "═══ AUTO BUILD COMPLETE ═══");
       pushTerminal("system", 'Click "Open Godot" to see your game, or "Run Game" to play!');
       log("system", "success", "Game auto-built successfully!");
-      toast("success", "Game built! Open Godot to play.");
+      toast("success", "Game built! Switching to Preview...");
       setCompleted(true);
+      // Switch to live preview after a short delay
+      setTimeout(() => onComplete?.(), 500);
     } catch (e: any) {
       pushTerminal("system", `═══ BUILD FAILED: ${e} ═══`);
       log("system", "error", `Auto-build failed: ${e}`);
