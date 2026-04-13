@@ -75,6 +75,9 @@ export const bridge = {
 
   exportGodotHtml5: () => invoke<GodotExportResult>("export_godot_html5"),
 
+  writeProjectFile: (relativePath: string, content: string) =>
+    invoke<void>("write_project_file", { relativePath, content }),
+
   listGodotFiles: () => invoke<GodotFileEntry[]>("list_godot_files"),
 
   getGodotCounts: () => invoke<[number, number]>("get_godot_counts"),

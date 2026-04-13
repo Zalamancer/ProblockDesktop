@@ -174,6 +174,30 @@ pub fn get_godot_counts(state: State<'_, AppState>) -> Result<(usize, usize), St
     Ok(godot::count_project_files(&pp))
 }
 
+// ── File Writer ───────────────────────────────────
+
+#[tauri::command]
+pub fn write_project_file(
+    state: State<'_, AppState>,
+    relative_path: String,
+    content: String,
+) -> Result<(), String> {
+    let pp = state.project_path.lock().unwrap().clone()
+        .ok_or("No project open")?;
+    let full_path = std::path::Path::new(&pp).join(&relative_path);
+
+    // Ensure parent directory exists
+    if let Some(parent) = full_path.parent() {
+        std::fs::create_dir_all(parent)
+            .map_err(|e| format!("Failed to create directory: {}", e))?;
+    }
+
+    std::fs::write(&full_path, &content)
+        .map_err(|e| format!("Failed to write file: {}", e))?;
+
+    Ok(())
+}
+
 // ── Preview ───────────────────────────────────────
 
 #[tauri::command]

@@ -22,6 +22,7 @@ pub fn run() {
             commands::open_godot_editor,
             commands::run_godot_game,
             commands::export_godot_html5,
+            commands::write_project_file,
             commands::list_godot_files,
             commands::get_godot_counts,
             commands::get_html5_export_path,

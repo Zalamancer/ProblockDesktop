@@ -14,16 +14,17 @@ import { ToastContainer } from "./ToastContainer";
 import { StatusBar } from "./StatusBar";
 import { SceneBrowser } from "./SceneBrowser";
 import { CommandPalette, buildPaletteActions } from "./CommandPalette";
+import { AutoBuilder } from "./AutoBuilder";
 import { useSettings } from "../store/settings-store";
 import { useToasts } from "../store/toast-store";
 import { useHotkeys } from "../lib/use-hotkeys";
 import { dialogs } from "../lib/tauri-bridge";
-import { Wrench, Monitor, FolderOpen, Code2, Settings, GripHorizontal, Clapperboard } from "lucide-react";
+import { Wrench, Monitor, FolderOpen, Code2, Settings, GripHorizontal, Clapperboard, Rocket } from "lucide-react";
 
 export function DesktopLayout() {
   const [terminalHeight, setTerminalHeight] = useState(200);
   const [toolsDetected, setToolsDetected] = useState(false);
-  const [centerTab, setCenterTab] = useState<"preview" | "assets" | "scripts" | "scenes">("preview");
+  const [centerTab, setCenterTab] = useState<"preview" | "assets" | "scripts" | "scenes" | "build">("build");
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const resizeRef = useRef<number | null>(null);
@@ -73,6 +74,7 @@ export function DesktopLayout() {
     "mod+2": () => setCenterTab("assets"),
     "mod+3": () => setCenterTab("scripts"),
     "mod+4": () => setCenterTab("scenes"),
+    "mod+5": () => setCenterTab("build"),
     "mod+,": () => useSettings.getState().openSettings(),
     "mod+k": () => clearTerminal(),
     "mod+p": () => setPaletteOpen(true),
@@ -194,6 +196,7 @@ export function DesktopLayout() {
                 { key: "assets" as const, icon: FolderOpen, label: "Assets", hint: "⌘2" },
                 { key: "scripts" as const, icon: Code2, label: "Scripts", hint: "⌘3" },
                 { key: "scenes" as const, icon: Clapperboard, label: "Scenes", hint: "⌘4" },
+                { key: "build" as const, icon: Rocket, label: "Build", hint: "⌘5" },
               ]).map((tab) => (
                 <button
                   key={tab.key}
@@ -219,8 +222,10 @@ export function DesktopLayout() {
                 <AssetBrowser />
               ) : centerTab === "scripts" ? (
                 <ScriptRunner />
-              ) : (
+              ) : centerTab === "scenes" ? (
                 <SceneBrowser />
+              ) : (
+                <AutoBuilder />
               )}
             </div>
           </div>
