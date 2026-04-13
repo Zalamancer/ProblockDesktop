@@ -9,7 +9,9 @@ import { Terminal } from "./Terminal";
 import { GamePreview } from "./GamePreview";
 import { AssetBrowser } from "./AssetBrowser";
 import { ScriptRunner } from "./ScriptRunner";
-import { Wrench, Monitor, FolderOpen, Code2 } from "lucide-react";
+import { SettingsModal } from "./SettingsModal";
+import { useSettings } from "../store/settings-store";
+import { Wrench, Monitor, FolderOpen, Code2, Settings } from "lucide-react";
 
 export function DesktopLayout() {
   const [terminalHeight] = useState(200);
@@ -91,11 +93,22 @@ export function DesktopLayout() {
       {/* Top bar */}
       <div className="h-10 flex items-center justify-between px-3 bg-zinc-900 rounded-lg border border-zinc-800">
         <span className="text-sm font-semibold tracking-wide">Problocks</span>
-        <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-          <Wrench size={12} />
-          <span>{toolsDetected ? "Tools detected" : "Detecting tools..."}</span>
+        <div className="flex items-center gap-3 text-xs text-zinc-500">
+          <div className="flex items-center gap-1.5">
+            <Wrench size={12} />
+            <span>{toolsDetected ? "Tools detected" : "Detecting tools..."}</span>
+          </div>
+          <button
+            onClick={useSettings.getState().openSettings}
+            className="p-1 text-zinc-500 hover:text-zinc-200 transition-colors"
+            title="Settings"
+          >
+            <Settings size={14} />
+          </button>
         </div>
       </div>
+
+      <SettingsModal />
 
       {/* Main content */}
       <div className="flex-1 flex gap-1.5 min-h-0">

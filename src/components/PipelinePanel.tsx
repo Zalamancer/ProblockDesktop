@@ -9,6 +9,7 @@ import {
 import { useOrchestrator } from "../store/orchestrator-store";
 import { bridge, dialogs } from "../lib/tauri-bridge";
 import { useActivity } from "../store/activity-store";
+import { useSettings } from "../store/settings-store";
 
 function StatusDot({ status }: { status: "idle" | "running" | "error" }) {
   const color =
@@ -35,6 +36,8 @@ export function PipelinePanel() {
     setGodotCounts,
   } = useOrchestrator();
   const log = useActivity((s) => s.add);
+  const addRecent = useSettings((s) => s.addRecentProject);
+  const recentProjects = useSettings((s) => s.recentProjects);
 
   async function handleCreateProject() {
     try {
@@ -48,25 +51,39 @@ export function PipelinePanel() {
         godotProjectPath: info.godot_project_path,
       });
       log("system", "success", `Created project: ${info.name}`);
+      addRecent(info.name, info.path);
       await refreshAssets();
     } catch (e: any) {
       log("system", "error", `Create failed: ${e}`);
     }
   }
 
+  async function openProjectByPath(folder: string) {
+    const info = await bridge.openProject(folder);
+    setProject({
+      name: info.name,
+      path: info.path,
+      godotProjectPath: info.godot_project_path,
+    });
+    log("system", "success", `Opened project: ${info.name}`);
+    addRecent(info.name, info.path);
+    await refreshAssets();
+    await refreshGodotCounts();
+  }
+
   async function handleOpenProject() {
     try {
       const folder = await dialogs.pickFolder("Open Problocks project");
       if (!folder) return;
-      const info = await bridge.openProject(folder);
-      setProject({
-        name: info.name,
-        path: info.path,
-        godotProjectPath: info.godot_project_path,
-      });
-      log("system", "success", `Opened project: ${info.name}`);
-      await refreshAssets();
-      await refreshGodotCounts();
+      await openProjectByPath(folder);
+    } catch (e: any) {
+      log("system", "error", `Open failed: ${e}`);
+    }
+  }
+
+  async function handleOpenRecent(path: string) {
+    try {
+      await openProjectByPath(path);
     } catch (e: any) {
       log("system", "error", `Open failed: ${e}`);
     }
@@ -186,6 +203,27 @@ export function PipelinePanel() {
           <FolderOpen size={13} /> Open
         </button>
       </div>
+
+      {/* Recent projects */}
+      {!project && recentProjects.length > 0 && (
+        <div className="mb-4">
+          <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
+            Recent
+          </h2>
+          <div className="space-y-0.5">
+            {recentProjects.slice(0, 5).map((rp) => (
+              <button
+                key={rp.path}
+                onClick={() => handleOpenRecent(rp.path)}
+                className="w-full text-left px-2 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 rounded-md transition-colors truncate"
+                title={rp.path}
+              >
+                {rp.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Tool status */}
       <div className="mb-4">
