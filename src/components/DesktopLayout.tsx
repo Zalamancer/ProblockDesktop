@@ -6,11 +6,14 @@ import { useTerminal } from "../store/terminal-store";
 import { PipelinePanel } from "./PipelinePanel";
 import { ActivityLog } from "./ActivityLog";
 import { Terminal } from "./Terminal";
-import { Wrench } from "lucide-react";
+import { GamePreview } from "./GamePreview";
+import { AssetBrowser } from "./AssetBrowser";
+import { Wrench, Monitor, FolderOpen } from "lucide-react";
 
 export function DesktopLayout() {
   const [terminalHeight] = useState(200);
   const [toolsDetected, setToolsDetected] = useState(false);
+  const [centerTab, setCenterTab] = useState<"preview" | "assets">("preview");
 
   const setGodotStatus = useOrchestrator((s) => s.setGodotStatus);
   const addAsset = useOrchestrator((s) => s.addAsset);
@@ -100,10 +103,36 @@ export function DesktopLayout() {
           <PipelinePanel />
         </div>
 
-        {/* Center: Preview + Terminal */}
+        {/* Center: Preview/Assets + Terminal */}
         <div className="flex-1 flex flex-col gap-1.5 min-w-0">
-          <div className="flex-1 bg-zinc-900 rounded-lg border border-zinc-800 flex items-center justify-center">
-            <p className="text-sm text-zinc-500">Game Preview</p>
+          <div className="flex-1 bg-zinc-900 rounded-lg border border-zinc-800 flex flex-col min-h-0 overflow-hidden">
+            {/* Tab bar */}
+            <div className="flex items-center gap-0.5 px-2 pt-1.5 pb-0.5 border-b border-zinc-800">
+              <button
+                onClick={() => setCenterTab("preview")}
+                className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md transition-colors ${
+                  centerTab === "preview"
+                    ? "bg-zinc-700 text-zinc-100"
+                    : "text-zinc-500 hover:text-zinc-300"
+                }`}
+              >
+                <Monitor size={12} /> Preview
+              </button>
+              <button
+                onClick={() => setCenterTab("assets")}
+                className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md transition-colors ${
+                  centerTab === "assets"
+                    ? "bg-zinc-700 text-zinc-100"
+                    : "text-zinc-500 hover:text-zinc-300"
+                }`}
+              >
+                <FolderOpen size={12} /> Assets
+              </button>
+            </div>
+            {/* Tab content */}
+            <div className="flex-1 min-h-0 p-2">
+              {centerTab === "preview" ? <GamePreview /> : <AssetBrowser />}
+            </div>
           </div>
 
           {/* Bottom: Terminal */}

@@ -7,7 +7,7 @@ import {
   Globe,
 } from "lucide-react";
 import { useOrchestrator } from "../store/orchestrator-store";
-import { bridge } from "../lib/tauri-bridge";
+import { bridge, dialogs } from "../lib/tauri-bridge";
 import { useActivity } from "../store/activity-store";
 
 function StatusDot({ status }: { status: "idle" | "running" | "error" }) {
@@ -38,7 +38,10 @@ export function PipelinePanel() {
 
   async function handleCreateProject() {
     try {
-      const info = await bridge.createProject("/tmp", "MyProject");
+      const baseDir = await dialogs.pickFolder("Choose location for new project");
+      if (!baseDir) return;
+      const name = baseDir.split("/").pop() ?? "Untitled";
+      const info = await bridge.createProject(baseDir, name);
       setProject({
         name: info.name,
         path: info.path,
@@ -53,8 +56,9 @@ export function PipelinePanel() {
 
   async function handleOpenProject() {
     try {
-      // In a real flow this would use a Tauri file dialog
-      const info = await bridge.openProject("/tmp/MyProject");
+      const folder = await dialogs.pickFolder("Open Problocks project");
+      if (!folder) return;
+      const info = await bridge.openProject(folder);
       setProject({
         name: info.name,
         path: info.path,
@@ -97,9 +101,10 @@ export function PipelinePanel() {
   async function handleOpenBlender() {
     if (!project) return;
     try {
+      const file = await dialogs.pickBlendFile();
       setBlenderStatus("running");
-      await bridge.openInBlender("");
-      log("blender", "info", "Blender opened");
+      await bridge.openInBlender(file ?? "");
+      log("blender", "info", file ? `Opened ${file.split("/").pop()}` : "Blender opened");
     } catch (e: any) {
       setBlenderStatus("error");
       log("blender", "error", `Blender failed: ${e}`);

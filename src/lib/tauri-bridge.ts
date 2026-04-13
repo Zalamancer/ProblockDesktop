@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { open } from "@tauri-apps/plugin-dialog";
 
 // ── Types ──────────────────────────────────────────
 
@@ -69,6 +70,22 @@ export const bridge = {
   exportGodotHtml5: () => invoke<GodotExportResult>("export_godot_html5"),
 
   getGodotCounts: () => invoke<[number, number]>("get_godot_counts"),
+
+  getHtml5ExportPath: () => invoke<string | null>("get_html5_export_path"),
+};
+
+// ── File Dialogs ──────────────────────────────────
+
+export const dialogs = {
+  pickFolder: (title: string) =>
+    open({ title, directory: true, multiple: false }) as Promise<string | null>,
+
+  pickBlendFile: () =>
+    open({
+      title: "Select Blender file",
+      filters: [{ name: "Blender", extensions: ["blend"] }],
+      multiple: false,
+    }) as Promise<string | null>,
 };
 
 // ── Event Listeners ────────────────────────────────

@@ -10,6 +10,7 @@ use commands::AppState;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .manage(AppState::default())
         .invoke_handler(tauri::generate_handler![
             commands::detect_tools,
@@ -22,6 +23,7 @@ pub fn run() {
             commands::run_godot_game,
             commands::export_godot_html5,
             commands::get_godot_counts,
+            commands::get_html5_export_path,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

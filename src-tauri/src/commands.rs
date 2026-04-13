@@ -166,3 +166,17 @@ pub fn get_godot_counts(state: State<'_, AppState>) -> Result<(usize, usize), St
         .ok_or("No project open")?;
     Ok(godot::count_project_files(&pp))
 }
+
+// ── Preview ───────────────────────────────────────
+
+#[tauri::command]
+pub fn get_html5_export_path(state: State<'_, AppState>) -> Result<Option<String>, String> {
+    let pp = state.project_path.lock().unwrap().clone()
+        .ok_or("No project open")?;
+    let index = format!("{}/.problocks/html5-export/index.html", pp);
+    if std::path::Path::new(&index).exists() {
+        Ok(Some(index))
+    } else {
+        Ok(None)
+    }
+}
